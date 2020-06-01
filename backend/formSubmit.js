@@ -31,7 +31,7 @@ const formSubmit = async (req, res) => {
   }
 
   const release = await lockfile.lock(file, { retries });
-  const data = JSON.stringify(req.body)
+  const data = JSON.stringify(req.body.data)
   await fs.appendFile(file, `${data}\n`)
   release()
   return res.send('ok')
