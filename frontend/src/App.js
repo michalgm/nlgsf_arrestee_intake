@@ -1,11 +1,13 @@
 import * as React from 'react';
 import { Container, Typography, Paper, CssBaseline, Snackbar } from '@material-ui/core';
 import { Alert, AlertTitle } from '@material-ui/lab';
-import FormRenderer, { componentTypes } from '@data-driven-forms/react-form-renderer';
+import FormRenderer, { componentTypes, validatorTypes } from '@data-driven-forms/react-form-renderer';
 import { componentMapper, FormTemplate } from '@data-driven-forms/mui-component-mapper';
 import axios from 'axios';
 import { useGoogleReCaptcha } from 'react-google-recaptcha-v3';
 import './App.css';
+
+
 
 function toTitleCase(str) {
   return str.split(/[ _]/)
@@ -18,7 +20,11 @@ const fieldDefaults = f => ({
     component: componentTypes.TEXT_FIELD,
     label: toTitleCase(f.name),
     initialValue: '',
-    margin: "normal"
+    margin: "normal",
+    validate: [
+      f.isRequired ? { type: validatorTypes.REQUIRED } : null,
+      f.pattern ? { type: validatorTypes.PATTERN, pattern: f.pattern, message: `Invalid value for ${f.label || toTitleCase(f.name)}` } : null
+    ].filter(v => v)
   }, ...f
 })
 
@@ -51,8 +57,8 @@ const defaultValues = urlParams.get('debug') ?
   } : {}
 
 const personal_fields = [
-  { name: 'first_name' },
-  { name: 'last_name' },
+  { name: 'first_name', isRequired: true },
+  { name: 'last_name', isRequired: true },
   {
     name: 'dob', label: 'Date of Birth', component: componentTypes.DATE_PICKER, closeOnDaySelect: true, DatePickerProps: {
       keyboard: true,
@@ -61,9 +67,10 @@ const personal_fields = [
       mask: value => value ? [/\d/, /\d/, "/", /\d/, /\d/, "/", /\d/, /\d/, /\d/, /\d/] : [],
       animateYearScrolling: false
     },
+    isRequired: true,
   },
   { name: 'phone_number' },
-  { name: 'email', type: 'email' },
+  { name: 'email', type: 'email', pattern: /^([a-zA-Z0-9_\-\.]+)@([a-zA-Z0-9_\-\.]+)\.([a-zA-Z]{2,5})$/ },
   { name: 'address', label: 'Street Address' },
   { name: 'city' },
   { name: 'state' },
@@ -78,18 +85,20 @@ const arrest_fields = [
       mask: value => value ? [/\d/, /\d/, "/", /\d/, /\d/, "/", /\d/, /\d/, /\d/, /\d/] : [],
       animateYearScrolling: false
     },
+    isRequired: true
   },
   {
     name: 'arrest_time', component: componentTypes.TIME_PICKER, keyboard: true,
     MuiPickersUtilsProviderProps: {
       format: 'hh:mm A',
-
     },
+    isRequired: true,
+
     mask: value => value ? [/\d/, /\d/, ":", /\d/, /\d/, " ", /a|p/i, "M"] : []
   },
-  { name: 'arrest_city', component: componentTypes.SELECT, options: ['Oakland', 'San Francisco', 'Emeryville', 'Berkeley'].map(value => ({ value, label: value })) },
+  { name: 'arrest_city', component: componentTypes.SELECT, options: ['Oakland', 'San Francisco', 'Emeryville', 'Berkeley'].map(value => ({ value, label: value })), isRequired: true },
   { name: 'arrest_location' },
-  { name: 'charges', component: componentTypes.TEXTAREA, rows: 4 },
+  { name: 'charges', component: componentTypes.TEXTAREA, rows: 4, isRequired: true },
   { name: 'felonies', label: 'Felony Charges?', component: componentTypes.CHECKBOX },
   { name: 'prn', label: 'Incident ID/Police Report Number' },
   { name: 'docket', label: 'Docket/Citation/CEN Number' },
@@ -100,6 +109,7 @@ const arrest_fields = [
       mask: value => value ? [/\d/, /\d/, "/", /\d/, /\d/, "/", /\d/, /\d/, /\d/, /\d/] : [],
       animateYearScrolling: false
     },
+    isRequired: true
   },
   {
     name: 'courttime', label: 'Next Court Date Time and Location (Department)'
@@ -111,23 +121,44 @@ const arrest_fields = [
 const schema = {
   fields: [
     {
-      component: componentTypes.SUB_FORM,
-      title: 'Personal Information',
-      name: 'personal_info',
-      fields: personal_fields.map(fieldDefaults)
-    },
-    {
-      component: componentTypes.SUB_FORM,
-      title: 'Arrest Information',
-      name: 'arrest_info',
-      fields: arrest_fields.map(fieldDefaults)
-    },
-    {
-      component: componentTypes.PLAIN_TEXT,
-      name: 'disclaimer',
-      label: `The responsibility to attend court dates and track your case as it winds through the criminal justice system ultimately rests with YOU (not your lawyer, friend, parent, or the NLG). It is your reputation, arrest record and liberty that is at stake and no one will ever have the same level of interest as you should. Think of those who are assisting you as partners in YOUR struggle for justice and your case as something that you simply cannot abdicate responsibility for, even when formally represented by an attorney. This is very important and failing to remain vigilant may cause you serious unintended consequences. This remains true whether you hire private counsel or an NLG lawyer, or get a public defender assigned to you and it is especially true if you decide to go solo (pro per) and represent yourself.\n         Also, please be advised that filling out this form does not guarantee representation by any lawyer nor does it relieve you of the important responsibilities stated above. Again, to ensure the best possible outcome, YOU need to keep yourself appraised of what is happening in your own case. This means knowing where you are in the proceedings (demurrer, pre-trial etc.), having a general sense of how you expect it to be resolved (through a jury trial or by pleading to an offense as a result of a deal with the District Attorney) and knowing WHEN the decision about a resolution will have to be made. You may lose a legal motion and have to decide on a resolution fairly quickly, so don't be caught off guard.Of course, it is always best to proceed represented by counsel. We will use this information to try to link people with progressive lawyers. Thank you. `
+      component: componentTypes.WIZARD,
+      name: 'wizard',
+      stepsInfo: [
+        { title: 'Personal Information' },
+        { title: 'Arrest Information' },
+        { title: 'Submit' }
+      ],
+      fields: [
+        {
+          name: 'personal_info',
+          fields: personal_fields.map(fieldDefaults),
+          nextStep: 'arrest_info'
+        },
+        {
+          name: 'arrest_info',
+          fields: arrest_fields.map(fieldDefaults),
+          nextStep: 'disclaimer'
+        }, {
+          name: 'disclaimer',
+          fields: [{
+            component: componentTypes.PLAIN_TEXT,
+            name: 'disclaimer',
+            label: `The responsibility to attend court dates and track your case as it winds through the criminal justice system ultimately rests with YOU (not your lawyer, friend, parent, or the NLG). It is your reputation, arrest record and liberty that is at stake and no one will ever have the same level of interest as you should. Think of those who are assisting you as partners in YOUR struggle for justice and your case as something that you simply cannot abdicate responsibility for, even when formally represented by an attorney. This is very important and failing to remain vigilant may cause you serious unintended consequences. This remains true whether you hire private counsel or an NLG lawyer, or get a public defender assigned to you and it is especially true if you decide to go solo (pro per) and represent yourself.\n         Also, please be advised that filling out this form does not guarantee representation by any lawyer nor does it relieve you of the important responsibilities stated above. Again, to ensure the best possible outcome, YOU need to keep yourself appraised of what is happening in your own case. This means knowing where you are in the proceedings (demurrer, pre-trial etc.), having a general sense of how you expect it to be resolved (through a jury trial or by pleading to an offense as a result of a deal with the District Attorney) and knowing WHEN the decision about a resolution will have to be made. You may lose a legal motion and have to decide on a resolution fairly quickly, so don't be caught off guard.Of course, it is always best to proceed represented by counsel. We will use this information to try to link people with progressive lawyers. Thank you. `
+          }]
+        }
+      ]
+
     }
   ],
+}
+
+const validate = values => {
+  const errors = {}
+  if (!values.email && !values.phone_number) {
+    errors.email = 'Please provide either email or phone number';
+    errors.phone_number = 'Please provide either email or phone number';
+  }
+  return errors;
 }
 
 const Form = () => {
@@ -170,7 +201,6 @@ const Form = () => {
         values[k] = values[k].format(k.match('time') ? 'hh:mm A' : 'MM/DD/YYYY');
       }
     })
-    console.log(values, submitCount)
     setValues(values)
     setSubmitCount(submitCount + 1)
   }
@@ -195,9 +225,11 @@ const Form = () => {
     <FormRenderer
       schema={schema}
       componentMapper={componentMapper}
-      FormTemplate={FormTemplate}
+      FormTemplate={(props) => <FormTemplate {...props} showFormControls={false} />}
       onSubmit={submit}
       initialValues={defaultValues}
+      validate={validate}
+      showFormControls={false}
     />
   </>
   )

@@ -16,8 +16,6 @@ const captcha = async (req) => {
   const secret_key = process.env.CAPTCHA_SECRET_KEY;
   const token = req.body.token;
   const url = `https://www.google.com/recaptcha/api/siteverify`;
-  console.log(process.env)
-
   const { data: { success, score } } = await axios.post(url, null, { params: { secret: secret_key, response: token } })
   if (!success || score < minScore) {
     return Promise.reject("Captcha validation failed")
