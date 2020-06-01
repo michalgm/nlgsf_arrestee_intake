@@ -1,0 +1,15 @@
+.App {
+  text-align: center;
+}
+body {
+  background-color: #666;
+}
+
+.MuiTypography-h3 {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.MuiGrid-container.MuiGrid-item, .MuiTypography-body1.MuiTypography-gutterBottom {
+  margin-top: 20px;
+}
