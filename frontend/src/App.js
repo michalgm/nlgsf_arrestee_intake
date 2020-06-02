@@ -31,7 +31,7 @@ const fieldDefaults = f => ({
 const urlParams = new URLSearchParams(window.location.search);
 
 
-const defaultValues = urlParams.get('debug') ?
+const defaultValues = 0 && urlParams.get('debug') ?
   {
     "legal_first_name": "Fakey",
     "legal_last_name": "MacFakePerson",
