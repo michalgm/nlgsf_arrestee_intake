@@ -33,9 +33,9 @@ const urlParams = new URLSearchParams(window.location.search);
 
 const defaultValues = urlParams.get('debug') ?
   {
-    "legal_first_name": "John",
-    "legal_last_name": "Doe",
-    "preferred_name": 'jdoe',
+    "legal_first_name": "Fakey",
+    "legal_last_name": "MacFakePerson",
+    "preferred_name": 'fake-o-phone',
     "birth_date": "1/15/1983",
     "phone_number": "123-234-1234",
     "email": "john@doe.com",
