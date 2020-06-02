@@ -1,12 +1,12 @@
 import * as React from 'react';
-import { Container, Typography, Paper, CssBaseline, Snackbar } from '@material-ui/core';
+import { Container, Typography, Paper, CssBaseline, Snackbar, Backdrop, CircularProgress } from '@material-ui/core';
 import { Alert, AlertTitle } from '@material-ui/lab';
 import FormRenderer, { componentTypes, validatorTypes } from '@data-driven-forms/react-form-renderer';
 import { componentMapper, FormTemplate } from '@data-driven-forms/mui-component-mapper';
 import axios from 'axios';
 import { useGoogleReCaptcha } from 'react-google-recaptcha-v3';
 import './App.css';
-
+import moment from 'moment';
 
 
 function toTitleCase(str) {
@@ -33,9 +33,10 @@ const urlParams = new URLSearchParams(window.location.search);
 
 const defaultValues = urlParams.get('debug') ?
   {
-    "first_name": "John",
-    "last_name": "Doe",
-    "dob": "1/15/1983",
+    "legal_first_name": "John",
+    "legal_last_name": "Doe",
+    "preferred_name": 'jdoe',
+    "birth_date": "1/15/1983",
     "phone_number": "123-234-1234",
     "email": "john@doe.com",
     "address": "123 Main St",
@@ -57,10 +58,11 @@ const defaultValues = urlParams.get('debug') ?
   } : {}
 
 const personal_fields = [
-  { name: 'first_name', isRequired: true },
-  { name: 'last_name', isRequired: true },
+  { name: 'legal_first_name', isRequired: true },
+  { name: 'legal_last_name', isRequired: true },
+  { name: 'preferred_name' },
   {
-    name: 'dob', label: 'Date of Birth', component: componentTypes.DATE_PICKER, closeOnDaySelect: true, DatePickerProps: {
+    name: 'birth_date', component: componentTypes.DATE_PICKER, closeOnDaySelect: true, DatePickerProps: {
       keyboard: true,
       openTo: "year",
       format: 'MM/DD/YYYY',
@@ -70,7 +72,7 @@ const personal_fields = [
     isRequired: true,
   },
   { name: 'phone_number' },
-  { name: 'email', type: 'email', pattern: /^([a-zA-Z0-9_\-\.]+)@([a-zA-Z0-9_\-\.]+)\.([a-zA-Z]{2,5})$/ },
+  { name: 'email', type: 'email', pattern: /^([a-z0-9_\-.]+)@([a-z0-9_\-.]+)\.([a-z]{2,5})$/i },
   { name: 'address', label: 'Street Address' },
   { name: 'city' },
   { name: 'state' },
@@ -100,6 +102,10 @@ const arrest_fields = [
   { name: 'arrest_location' },
   { name: 'charges', component: componentTypes.TEXTAREA, rows: 4, isRequired: true },
   { name: 'felonies', label: 'Felony Charges?', component: componentTypes.CHECKBOX },
+  { name: 'abuse', label: 'Jail Conditions/Police Misconduct', component: componentTypes.TEXTAREA, rows: 4 },
+]
+
+const court_fields = [
   { name: 'prn', label: 'Incident ID/Police Report Number' },
   { name: 'docket', label: 'Docket/Citation/CEN Number' },
   {
@@ -114,8 +120,7 @@ const arrest_fields = [
   {
     name: 'courttime', label: 'Next Court Date Time and Location (Department)'
   },
-  { name: 'abuse', label: 'Jail Conditions/Police Misconduct', component: componentTypes.TEXTAREA, rows: 4 },
-  { name: 'notes', label: 'Other Info', component: componentTypes.TEXTAREA, rows: 4 },
+  { name: 'notes', label: 'Other Info', component: componentTypes.TEXTAREA, rows: 4, helperText: 'Please do not describe anything you witnessed or did that could be incriminating to you or others' },
 ]
 
 const schema = {
@@ -126,7 +131,8 @@ const schema = {
       stepsInfo: [
         { title: 'Personal Information' },
         { title: 'Arrest Information' },
-        { title: 'Submit' }
+        { title: 'Court Information' },
+        // { title: 'Submit' }
       ],
       fields: [
         {
@@ -137,15 +143,21 @@ const schema = {
         {
           name: 'arrest_info',
           fields: arrest_fields.map(fieldDefaults),
-          nextStep: 'disclaimer'
-        }, {
-          name: 'disclaimer',
-          fields: [{
-            component: componentTypes.PLAIN_TEXT,
-            name: 'disclaimer',
-            label: `The responsibility to attend court dates and track your case as it winds through the criminal justice system ultimately rests with YOU (not your lawyer, friend, parent, or the NLG). It is your reputation, arrest record and liberty that is at stake and no one will ever have the same level of interest as you should. Think of those who are assisting you as partners in YOUR struggle for justice and your case as something that you simply cannot abdicate responsibility for, even when formally represented by an attorney. This is very important and failing to remain vigilant may cause you serious unintended consequences. This remains true whether you hire private counsel or an NLG lawyer, or get a public defender assigned to you and it is especially true if you decide to go solo (pro per) and represent yourself.\n         Also, please be advised that filling out this form does not guarantee representation by any lawyer nor does it relieve you of the important responsibilities stated above. Again, to ensure the best possible outcome, YOU need to keep yourself appraised of what is happening in your own case. This means knowing where you are in the proceedings (demurrer, pre-trial etc.), having a general sense of how you expect it to be resolved (through a jury trial or by pleading to an offense as a result of a deal with the District Attorney) and knowing WHEN the decision about a resolution will have to be made. You may lose a legal motion and have to decide on a resolution fairly quickly, so don't be caught off guard.Of course, it is always best to proceed represented by counsel. We will use this information to try to link people with progressive lawyers. Thank you. `
-          }]
-        }
+          nextStep: 'court_info'
+        },
+        {
+          name: 'court_info',
+          fields: court_fields.map(fieldDefaults),
+        },
+
+        // {
+        //   name: 'disclaimer',
+        //   fields: [{
+        //     component: componentTypes.PLAIN_TEXT,
+        //     name: 'disclaimer',
+        //     label: `The responsibility to attend court dates and track your case as it winds through the criminal justice system ultimately rests with YOU (not your lawyer, friend, parent, or the NLG). It is your reputation, arrest record and liberty that is at stake and no one will ever have the same level of interest as you should. Think of those who are assisting you as partners in YOUR struggle for justice and your case as something that you simply cannot abdicate responsibility for, even when formally represented by an attorney. This is very important and failing to remain vigilant may cause you serious unintended consequences. This remains true whether you hire private counsel or an NLG lawyer, or get a public defender assigned to you and it is especially true if you decide to go solo (pro per) and represent yourself.\n         Also, please be advised that filling out this form does not guarantee representation by any lawyer nor does it relieve you of the important responsibilities stated above. Again, to ensure the best possible outcome, YOU need to keep yourself appraised of what is happening in your own case. This means knowing where you are in the proceedings (demurrer, pre-trial etc.), having a general sense of how you expect it to be resolved (through a jury trial or by pleading to an offense as a result of a deal with the District Attorney) and knowing WHEN the decision about a resolution will have to be made. You may lose a legal motion and have to decide on a resolution fairly quickly, so don't be caught off guard.Of course, it is always best to proceed represented by counsel. We will use this information to try to link people with progressive lawyers. Thank you. `
+        //   }]
+        // }
       ]
 
     }
@@ -166,11 +178,13 @@ const Form = () => {
   const [submitCount, setSubmitCount] = React.useState(0);
   const [success, setSuccess] = React.useState(false);
   const [values, setValues] = React.useState('');
+  const [loading, setLoading] = React.useState(false);
   const { executeRecaptcha } = useGoogleReCaptcha();
 
   React.useEffect(() => {
     const getToken = async () => {
       try {
+        setLoading(true)
         const token = await executeRecaptcha("submit");
         await axios.post('/submit', { data: values, token })
         setSuccess(true)
@@ -181,7 +195,7 @@ const Form = () => {
           setError(e.message || e)
         }
       }
-
+      setLoading(false)
     }
     if (values) {
       getToken()
@@ -191,14 +205,17 @@ const Form = () => {
   const submit = async (values, api) => {
     setError(null);
     setSuccess(false);
+
     api.getRegisteredFields().forEach(f => {
       if (values[f] === undefined) {
         values[f] = ''
       }
     })
     Object.keys(values).forEach(k => {
-      if (typeof values[k] === 'object') {
-        values[k] = values[k].format(k.match('time') ? 'hh:mm A' : 'MM/DD/YYYY');
+      if (k.match('_date')) {
+        values[k] = moment(values[k], 'MM/DD/YYYY').format('YYYY-MM-DD')
+      } else if (k.match('_time')) {
+        values[k] = moment(values[k]).format('hh:mm A')
       }
     })
     setValues(values)
@@ -206,11 +223,17 @@ const Form = () => {
   }
   if (success) {
     return <Alert severity="success">
-      Thank you for submitting your information!
+      <AlertTitle>
+        Thank you for submitting your information!
+      </AlertTitle>
+      We will use the information you have provided to try to link people with movement lawyers and/or public defenders, to give you important legal information, and to try to make sure no one falls through the cracks. However, filling out this form does not guarantee you a lawyer. You are still responsible for going to your court date and keeping track of what's happening with your case. Thank you and we will be in touch soon.
     </Alert>
   }
 
   return (<>
+    <Backdrop style={{ zIndex: 1000 }} open={loading}>
+      <CircularProgress color="inherit" />
+    </Backdrop>
     <Snackbar open={Boolean(error)} onClose={() => { setError(null) }} anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
       <Alert severity="error" onClose={() => { setError(null) }}>
         <AlertTitle>An error occured while submitting the form:</AlertTitle>
@@ -219,8 +242,8 @@ const Form = () => {
     </Snackbar>
     <Alert severity="info" icon={false}>
       <Typography variant="subtitle1">
-        We will only use this information to track people's cases, distribute information, and facilitate legal defense. This information will not be shared or released.
-          </Typography>
+        We will only use this information to keep track of people's cases, give you information, and coordinate legal defense. This information will not be shared or released.
+      </Typography>
     </Alert>
     <FormRenderer
       schema={schema}
@@ -230,6 +253,7 @@ const Form = () => {
       initialValues={defaultValues}
       validate={validate}
       showFormControls={false}
+      onCancel={() => { }}
     />
   </>
   )
@@ -240,7 +264,7 @@ function App() {
     <CssBaseline>
       <Container maxWidth="md">
         <Paper style={{ padding: 20 }}>
-          <Typography variant="h3" gutterBottom>NLG SF Arrestee Intake Form</Typography>
+          <Typography variant="h3" gutterBottom>NLG SF Bay Area Arrestee Form</Typography>
           {Form()}
         </Paper>
       </Container>
