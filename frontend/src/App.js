@@ -98,7 +98,7 @@ const arrest_fields = [
 
     mask: value => value ? [/\d/, /\d/, ":", /\d/, /\d/, " ", /a|p/i, "M"] : []
   },
-  { name: 'arrest_city', component: componentTypes.SELECT, options: ['Oakland', 'San Francisco', 'Emeryville', 'Berkeley'].map(value => ({ value, label: value })), isRequired: true },
+  { name: 'arrest_city', component: componentTypes.SELECT, options: ['Oakland', 'San Francisco', 'Emeryville', 'Berkeley', "Dublin", "Hayward", "Richmond", "SanJose", "SanLeandro", "SanMateo", "SantaCruz", "WalnutCreek"].map(value => ({ value, label: value })), isRequired: true },
   { name: 'arrest_location' },
   { name: 'charges', component: componentTypes.TEXTAREA, rows: 4, isRequired: true },
   { name: 'felonies', label: 'Felony Charges?', component: componentTypes.CHECKBOX },
