@@ -1,6 +1,6 @@
 #!/bin/bash
-
-cd $(pwd)/frontend
+git pull
+cd frontend
 npm run build
 
 cd ../backend
