@@ -189,10 +189,11 @@ const Form = () => {
         await axios.post('/submit', { data: values, token })
         setSuccess(true)
       } catch (e) {
-        if (e.response && e.response.data && e.response.data.error) {
+        console.error(e)
+        if (e && e.response && e.response.data && e.response.data.error) {
           setError(e.response.data.error)
         } else {
-          setError(e.message || e)
+          setError(e && e.message ? e.message : e)
         }
       }
       setLoading(false)
