@@ -2,13 +2,60 @@
   text-align: center;
 }
 body {
-  background-color: #666;
+  background-color: #fff;
 }
 
 .MuiTypography-h3 {
   text-align: center;
   margin-bottom: 20px;
 }
+
+#root > .MuiContainer-root{
+  padding-top: 90px;
+  margin-bottom: 100px;
+}
+
+#header {
+  transform: rotate( 180deg );
+  overflow: hidden;
+  position: absolute;
+  left: 0;
+  top: -1px;
+  width: 100%;
+  line-height: 0;
+  direction: ltr;
+}
+
+#header svg {
+  display: block;
+  width: calc(100% + 1.3px);
+  position: relative;
+  left: 50%;
+  -webkit-transform: translateX(-50%);
+  -ms-transform: translateX(-50%);
+  transform: translateX(-50%);
+  width: calc(300% + 1.3px);
+  height: 500px;
+}
+
+.elementor-shape-fill {
+  fill: #093B37;
+  -webkit-transform-origin: center;
+  -ms-transform-origin: center;
+  transform-origin: center;
+  -webkit-transform: rotateY(0deg);
+  transform: rotateY(0deg);
+}
+
+#nlg-logo {
+  top: 20px;
+  left: 20px;
+}
+
+#nlg-logo img {
+  width: 100%;
+}
+
 
 .MuiGrid-container.MuiGrid-item, .MuiTypography-body1.MuiTypography-gutterBottom {
   margin-top: 20px;

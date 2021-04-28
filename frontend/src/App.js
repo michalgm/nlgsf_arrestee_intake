@@ -1,12 +1,20 @@
-import * as React from 'react';
-import { Container, Typography, Paper, CssBaseline, Snackbar, Backdrop, CircularProgress } from '@material-ui/core';
-import { Alert, AlertTitle } from '@material-ui/lab';
-import FormRenderer, { componentTypes, validatorTypes } from '@data-driven-forms/react-form-renderer';
-import { componentMapper, FormTemplate } from '@data-driven-forms/mui-component-mapper';
-import axios from 'axios';
-import { useGoogleReCaptcha } from 'react-google-recaptcha-v3';
 import './App.css';
+
+import * as React from 'react';
+
+import { Alert, AlertTitle } from '@material-ui/lab';
+import {Backdrop, CircularProgress, Container, CssBaseline, Paper, Snackbar, Typography} from '@material-ui/core';
+import FormRenderer, { componentTypes, validatorTypes } from '@data-driven-forms/react-form-renderer';
+import {FormTemplate, componentMapper} from '@data-driven-forms/mui-component-mapper';
+import {breakpoints, compose, palette, position, sizing, spacing} from '@material-ui/system';
+
+import axios from 'axios';
 import moment from 'moment';
+import {styled} from '@material-ui/core/styles';
+import {useGoogleReCaptcha} from 'react-google-recaptcha-v3';
+
+const Box = styled('div')(breakpoints(compose(spacing, palette, sizing, position)));
+
 
 
 function toTitleCase(str) {
@@ -263,9 +271,15 @@ const Form = () => {
 function App() {
   return (
     <CssBaseline>
+      <Box id="nlg-logo" xs={{width: 70, position: 'absolute'}} lg={{width: 140, position: 'fixed'}}>
+        <a href="https://nlgsf.org">
+          <img src="/NLGSF-GREEN-LOGO@2x.png" alt="NLG-SFBA logo in green" loading="lazy" />
+        </a>
+      </Box>
       <Container maxWidth="md">
         <Paper style={{ padding: 20 }}>
-          <Typography variant="h3" gutterBottom>NLG SF Bay Area Arrestee Form</Typography>
+          <Typography variant="h3"
+            color="primary" gutterBottom>NLG SF Bay Area Arrestee Form</Typography>
           {Form()}
         </Paper>
       </Container>
