@@ -1,10 +1,13 @@
 module.exports = {
   apps: [
     {
-      name: "arrestee-form",
+      name: "arrestee-form-lsba",
       script: "index.js",
       instances: "max",
-      exec_mode: "cluster"
-    }
-  ]
-}
+      exec_mode: "cluster",
+      env: {
+        PORT: "3001",
+      },
+    },
+  ],
+};
