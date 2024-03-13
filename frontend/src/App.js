@@ -417,10 +417,8 @@ function App() {
       <Container maxWidth="md">
         <Paper style={{ padding: 20 }}>
           <Box bgcolor="primary.main" color="white" padding={2} mb={4}>
-            <Typography variant="h3">
-              Legal Solidarity Bay Area
-              <br />
-              Arrestee Form
+            <Typography variant="h4" align="center">
+              Legal Solidarity Bay Area Arrestee Form
             </Typography>
           </Box>
           {Form()}
