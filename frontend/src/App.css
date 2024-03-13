@@ -7,14 +7,14 @@ body {
 
 .MuiTypography-h3 {
   text-align: center;
-  margin-bottom: 20px;
+  /* margin-bottom: 20px; */
 }
 
 #root > .MuiContainer-root{
-  padding-top: 90px;
-  margin-bottom: 100px;
+  padding-top: 30px;
+  margin-bottom: 40px;
 }
-
+/*
 #header {
   transform: rotate( 180deg );
   overflow: hidden;
@@ -58,5 +58,10 @@ body {
 
 
 .MuiGrid-container.MuiGrid-item, .MuiTypography-body1.MuiTypography-gutterBottom {
+  margin-top: 20px;
+} */
+
+.MuiGrid-container.MuiGrid-item,
+.MuiTypography-body1.MuiTypography-gutterBottom {
   margin-top: 20px;
 }

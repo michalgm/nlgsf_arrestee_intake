@@ -1,23 +1,23 @@
-import * as serviceWorker from './serviceWorker';
+import * as serviceWorker from "./serviceWorker";
 
-import {ThemeProvider, createMuiTheme} from '@material-ui/core/styles';
+import App from "./App";
+import { GoogleReCaptchaProvider } from "react-google-recaptcha-v3";
+import React from "react";
+import ReactDOM from "react-dom";
+import { ThemeProvider } from "@material-ui/core/styles";
+import { createTheme } from "@material-ui/core/styles";
 
-import App from './App';
-import {GoogleReCaptchaProvider,} from 'react-google-recaptcha-v3';
-import React from 'react';
-import ReactDOM from 'react-dom';
-
-const theme = createMuiTheme({
+const theme = createTheme({
   palette: {
-    primary: {
-      main: '#093B37',
-    },
-    secondary: {
-      main: '#8E4585',
-    },
-    background: {
-      default: '#fff'
-    }
+    // primary: {
+    //   main: "#093B37",
+    // },
+    // secondary: {
+    //   main: "#8E4585",
+    // },
+    // background: {
+    //   default: "#fff",
+    // },
   },
 });
 
@@ -29,7 +29,7 @@ ReactDOM.render(
       </ThemeProvider>
     </GoogleReCaptchaProvider>
   </React.StrictMode>,
-  document.getElementById('root')
+  document.getElementById("root")
 );
 
 // If you want your app to work offline and load faster, you can change
