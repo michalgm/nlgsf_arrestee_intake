@@ -170,16 +170,17 @@ const arrest_fields = [
     options: [
       "Oakland",
       "San Francisco",
-      "Emeryville",
       "Berkeley",
+      "Emeryville",
       "Dublin",
       "Hayward",
       "Richmond",
-      "SanJose",
-      "SanLeandro",
-      "SanMateo",
-      "SantaCruz",
-      "WalnutCreek",
+      "San Jose",
+      "San Leandro",
+      "San Mateo",
+      "Santa Cruz",
+      "Walnut Creek",
+      "Other",
     ].map((value) => ({ value, label: value })),
     helperText: "(For the purposes of this form, SFO is in San Francisco)",
     isRequired: true,
@@ -222,14 +223,28 @@ const court_fields = [
   },
   {
     name: "courttime",
-    label: "Next Court Date Time and Location (Department)",
+    label: "Next Court Time",
+    component: componentTypes.TIME_PICKER,
+    MuiPickersUtilsProviderProps: {
+      format: "hh:mm A",
+    },
   },
   {
-    name: "lawyer",
-    label:
-      "Have you spoken with any lawyers about this arrest? If so, please add their name and contact info",
+    name: "court_location",
+  },
+  {
+    name: "lawyer_name",
+    helperText:
+      "If you have spoken with any lawyers about this arrest, please add their name",
+  },
+  {
+    name: "lawyer_contact_info",
     component: componentTypes.TEXTAREA,
     minRows: 4,
+    condition: {
+      when: "lawyer_name",
+      isNotEmpty: true,
+    },
   },
   {
     name: "notes",
@@ -308,7 +323,7 @@ const Form = () => {
       } catch (e) {
         console.error(e);
         if (e && e.response && e.response.data && e.response.data.error) {
-          setError(e.response.data.error);
+          setError(JSON.stringify(e.response.data.error));
         } else {
           setError(e && e.message ? e.message : e);
         }
