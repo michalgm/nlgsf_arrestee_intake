@@ -88,7 +88,7 @@ const defaultValues = urlParams.get("debug")
       prn: "12345678",
       docket: "AB-123456",
       court_date: "7/20/2024",
-      courttime: "9:00 AM - Wiley Courthouse",
+      court_time: 1590976642,
       abuse: "Ouch",
       notes: "Thank you",
     }
@@ -222,7 +222,7 @@ const court_fields = [
     isRequired: true,
   },
   {
-    name: "courttime",
+    name: "court_time",
     label: "Next Court Time",
     component: componentTypes.TIME_PICKER,
     MuiPickersUtilsProviderProps: {
