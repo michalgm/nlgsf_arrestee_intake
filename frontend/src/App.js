@@ -93,8 +93,8 @@ const defaultValues = urlParams.get("debug")
       notes: "Thank you",
     }
   : {
-      arrest_date: "3/13/2024",
-      arrest_city: "San Francisco",
+      // arrest_date: "3/13/2024",
+      // arrest_city: "San Francisco",
     };
 
 const personal_fields = [
