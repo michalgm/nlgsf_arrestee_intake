@@ -11,7 +11,7 @@ app.use(express.static('public'));
 app.use(bodyParser.json());
 router.post('/submit', formSubmit);
 app.use(router);
-app.use((err, req, res, next) => {
+app.use((err, req, res, _next) => {
   console.error(err);
   console.error(err.stack);
   res.status(500).json({ error: err.message || err });

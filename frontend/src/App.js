@@ -1,42 +1,81 @@
 import "./App.css";
 
+import { LocalizationProvider } from "@mui/x-date-pickers";
+import { AdapterMoment } from "@mui/x-date-pickers/AdapterMoment";
 import * as React from "react";
 
-import { Alert, AlertTitle } from "@material-ui/lab";
+import Wizard from "@data-driven-forms/common/wizard";
+import { FormTemplate, componentMapper } from "@data-driven-forms/mui-component-mapper";
+import WizardNav from "@data-driven-forms/mui-component-mapper/wizard/wizard-nav";
+import { FormRenderer, componentTypes, validatorTypes } from "@data-driven-forms/react-form-renderer";
 import {
+  Alert,
+  AlertTitle,
   Backdrop,
+  Button,
   CircularProgress,
   Container,
   CssBaseline,
   Paper,
   Snackbar,
   Typography,
-} from "@material-ui/core";
-import FormRenderer, {
-  componentTypes,
-  validatorTypes,
-} from "@data-driven-forms/react-form-renderer";
-import {
-  FormTemplate,
-  componentMapper,
-} from "@data-driven-forms/mui-component-mapper";
-import {
-  breakpoints,
-  compose,
-  palette,
-  position,
-  sizing,
-  spacing,
-} from "@material-ui/system";
+} from "@mui/material";
+import { breakpoints, compose, palette, position, sizing, spacing } from "@mui/system";
 
+import selectNext from "@data-driven-forms/common/wizard/select-next";
+import WizardContext from "@data-driven-forms/react-form-renderer/wizard-context";
+import { styled } from "@mui/material/styles";
+import { Stack } from "@mui/system";
 import axios from "axios";
 import moment from "moment";
-import { styled } from "@material-ui/core/styles";
+import { useContext } from "react";
 import { useGoogleReCaptcha } from "react-google-recaptcha-v3";
 
-const Box = styled("div")(
-  breakpoints(compose(spacing, palette, sizing, position))
-);
+const Box = styled("div")(breakpoints(compose(spacing, palette, sizing, position)));
+
+const WizardInternal = ({ stepsInfo, StepperProps }) => {
+  const { formOptions, currentStep, handlePrev, handleNext, activeStepIndex } = useContext(WizardContext);
+  const handleNextClick = () => {
+    currentStep.fields.forEach((field) => {
+      formOptions.blur(field.name);
+    });
+    if (formOptions.getState().valid) {
+      handleNext(selectNext(currentStep.nextStep, formOptions.getState));
+    }
+  };
+  return (
+    <div style={{ width: "100%" }}>
+      {currentStep.title}
+      {stepsInfo && <WizardNav StepperProps={StepperProps} stepsInfo={stepsInfo} activeStepIndex={activeStepIndex} />}
+
+      {formOptions.renderForm(currentStep.fields)}
+      <div>
+        <Stack direction="row" spacing={2} alignItems="center" justifyContent="end">
+          <Button variant="outlined" onClick={handlePrev} disabled={activeStepIndex === 0}>
+            {" "}
+            Back{" "}
+          </Button>
+          {currentStep.nextStep && (
+            <Button variant="contained" onClick={handleNextClick}>
+              {" "}
+              Next{" "}
+            </Button>
+          )}
+          {!currentStep.nextStep && (
+            <Button
+              variant="contained"
+              disabled={!formOptions.getState().valid}
+              onClick={() => formOptions.handleSubmit()}
+            >
+              Submit
+            </Button>
+          )}
+        </Stack>
+      </div>
+    </div>
+  );
+};
+const WrappedWizard = (props) => <Wizard Wizard={WizardInternal} {...props} />;
 
 function toTitleCase(str) {
   return str
@@ -132,8 +171,7 @@ const personal_fields = [
   { name: "zip" },
   {
     name: "special_needs",
-    label:
-      "Do you have any special needs/accessibility needs you would like us to know about?",
+    label: "Do you have any special needs/accessibility needs you would like us to know about?",
     component: componentTypes.TEXTAREA,
     minRows: 4,
   },
@@ -155,7 +193,6 @@ const arrest_fields = [
   {
     name: "arrest_time",
     component: componentTypes.TIME_PICKER,
-    // keyboard: true,
     MuiPickersUtilsProviderProps: {
       format: "hh:mm A",
     },
@@ -234,8 +271,7 @@ const court_fields = [
   },
   {
     name: "lawyer_name",
-    helperText:
-      "If you have spoken with any lawyers about this arrest, please add their name",
+    helperText: "If you have spoken with any lawyers about this arrest, please add their name",
   },
   {
     name: "lawyer_contact_info",
@@ -251,8 +287,7 @@ const court_fields = [
     label: "Other Info",
     component: componentTypes.TEXTAREA,
     minRows: 4,
-    helperText:
-      "Please do not describe anything you witnessed or did that could be incriminating to you or others",
+    helperText: "Please do not describe anything you witnessed or did that could be incriminating to you or others",
   },
 ];
 
@@ -345,9 +380,9 @@ const Form = () => {
       }
     });
     Object.keys(values).forEach((k) => {
-      if (k.match("_date")) {
+      if (k.match("_date") && values[k]) {
         values[k] = moment(values[k], "MM/DD/YYYY").format("YYYY-MM-DD");
-      } else if (k.match("_time")) {
+      } else if (k.match("_time") && values[k]) {
         values[k] = moment(values[k]).format("hh:mm A");
       }
     });
@@ -358,12 +393,10 @@ const Form = () => {
     return (
       <Alert severity="success">
         <AlertTitle>Thank you for submitting your information!</AlertTitle>
-        We will use the information you have provided to try to link people with
-        movement lawyers and/or public defenders, to give you important legal
-        information, and to try to make sure no one falls through the cracks.
-        However, filling out this form does not guarantee you a lawyer. You are
-        still responsible for going to your court date and keeping track of
-        what's happening with your case. Thank you and we will be in touch soon.
+        We will use the information you have provided to try to link people with movement lawyers and/or public
+        defenders, to give you important legal information, and to try to make sure no one falls through the cracks.
+        However, filling out this form does not guarantee you a lawyer. You are still responsible for going to your
+        court date and keeping track of what's happening with your case. Thank you and we will be in touch soon.
       </Alert>
     );
   }
@@ -392,17 +425,15 @@ const Form = () => {
       </Snackbar>
       <Alert severity="info" icon={false}>
         <Typography variant="subtitle1">
-          We will only use this information to keep track of people's cases,
-          give you information, and coordinate legal defense. This information
-          will not be shared or released.
+          We will only use this information to keep track of people's cases, give you information, and coordinate legal
+          defense. This information will not be shared or released.
         </Typography>
       </Alert>
       <FormRenderer
         schema={schema}
-        componentMapper={componentMapper}
-        FormTemplate={(props) => (
-          <FormTemplate {...props} showFormControls={false} />
-        )}
+        componentMapper={{ ...componentMapper, wizard: WrappedWizard }}
+        // componentMapper={componentMapper}
+        FormTemplate={(props) => <FormTemplate {...props} showFormControls={false} />}
         onSubmit={submit}
         initialValues={defaultValues}
         validate={validate}
@@ -429,16 +460,18 @@ function App() {
           />
         </a>
       </Box> */}
-      <Container maxWidth="md">
-        <Paper style={{ padding: 20 }}>
-          <Box bgcolor="primary.main" color="white" padding={2} mb={4}>
-            <Typography variant="h4" align="center">
-              Legal Solidarity Bay Area Arrestee Form
-            </Typography>
-          </Box>
-          {Form()}
-        </Paper>
-      </Container>
+      <LocalizationProvider dateAdapter={AdapterMoment}>
+        <Container maxWidth="md">
+          <Paper style={{ padding: 20 }}>
+            <Box bgcolor="primary.main" color="white" padding={2} mb={4}>
+              <Typography variant="h4" align="center">
+                Legal Solidarity Bay Area Arrestee Form
+              </Typography>
+            </Box>
+            {Form()}
+          </Paper>
+        </Container>
+      </LocalizationProvider>
     </CssBaseline>
   );
 }
