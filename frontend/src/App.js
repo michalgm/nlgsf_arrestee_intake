@@ -64,8 +64,16 @@ const WizardInternal = ({ stepsInfo, StepperProps }) => {
           {!currentStep.nextStep && (
             <Button
               variant="contained"
-              disabled={!formOptions.getState().valid}
-              onClick={() => formOptions.handleSubmit()}
+              // disabled={!formOptions.getState().valid}
+
+              onClick={() => {
+                currentStep.fields.forEach((field) => {
+                  formOptions.blur(field.name);
+                });
+                if (formOptions.getState().valid) {
+                  formOptions.handleSubmit();
+                }
+              }}
             >
               Submit
             </Button>
@@ -96,7 +104,18 @@ const fieldDefaults = (f) => ({
         ? {
             type: validatorTypes.PATTERN,
             pattern: f.pattern,
-            message: `Invalid value for ${f.label || toTitleCase(f.name)}`,
+            message: f.message || `Invalid value for ${f.label || toTitleCase(f.name)}`,
+          }
+        : null,
+      f.component === componentTypes.DATE_PICKER
+        ? {
+            type: "dateValidator",
+            date_options: f.date_options,
+          }
+        : null,
+      f.component === componentTypes.TIME_PICKER
+        ? {
+            type: "timeValidator",
           }
         : null,
     ].filter((v) => v),
@@ -106,19 +125,54 @@ const fieldDefaults = (f) => ({
 
 const urlParams = new URLSearchParams(window.location.search);
 
+const validatorMapper = {
+  // Custom validator for birth_date field
+  dateValidator:
+    ({ date_options: { minDate = "01/01/1920", maxDate = "12/31/2050" } = {} }) =>
+    (value) => {
+      if (!value) {
+        return undefined;
+      }
+      const now = moment();
+      const date = moment.isMoment(value) ? value : moment(value, "MM/DD/YYYY", true);
+
+      if (!date.isValid()) {
+        return "Invalid date format. Please use MM/DD/YYYY.";
+      }
+      if (minDate !== -1 && date.isBefore(minDate === "now" ? now : moment(minDate, "MM/DD/YYYY"))) {
+        return minDate === "now" ? "Date cannot be in the past" : `Date must be after ${minDate}.`;
+      }
+      if (maxDate !== -1 && date.isAfter(maxDate === "now" ? now : moment(maxDate, "MM/DD/YYYY"))) {
+        return maxDate === "now" ? "Date cannot be in the future" : `Date must be before ${maxDate}.`;
+      }
+
+      return undefined;
+    },
+  timeValidator: () => (value) => {
+    if (!value) {
+      return undefined;
+    }
+    const time = moment.isMoment(value) ? value : moment(value, true);
+    if (!time.isValid()) {
+      return "Invalid time. Please use HH:MM AM/PM format.";
+    }
+    return undefined;
+  },
+};
+
 const defaultValues = urlParams.get("debug")
   ? {
       legal_first_name: "Fakey",
       legal_last_name: "MacFakePerson",
       preferred_name: "fake-o-phone",
-      birth_date: "1/15/1983",
+      birth_date: "01/15/1983",
       phone_number: "123-234-1234",
       email: "john@doe.com",
       address: "123 Main St",
       city: "Oakland",
       state: "CA",
       zip: "94610",
-      arrest_date: "5/30/2024",
+      arrest_date: "05/30/2024",
       arrest_time: 1590976642,
       arrest_city: "Oakland",
       arrest_location: "10th and Broadway",
@@ -126,7 +180,7 @@ const defaultValues = urlParams.get("debug")
       felonies: false,
       prn: "12345678",
       docket: "AB-123456",
-      court_date: "7/20/2024",
+      court_date: "07/20/2024",
       court_time: 1590976642,
       abuse: "Ouch",
       notes: "Thank you",
@@ -158,12 +212,16 @@ const personal_fields = [
       animateYearScrolling: false,
     },
     isRequired: true,
+    date_options: {
+      maxDate: "now",
+    },
   },
   { name: "phone_number" },
   {
     name: "email",
     type: "email",
     pattern: /^([a-z0-9_\-.]+)@([a-z0-9_\-.]+)\.([a-z]{2,5})$/i,
+    message: "Invalid email address",
   },
   { name: "address", label: "Street Address" },
   { name: "city" },
@@ -189,6 +247,10 @@ const arrest_fields = [
       animateYearScrolling: false,
     },
     isRequired: true,
+    date_options: {
+      minDate: "01/01/2020",
+      maxDate: "now",
+    },
   },
   {
     name: "arrest_time",
@@ -221,6 +283,12 @@ const arrest_fields = [
     ].map((value) => ({ value, label: value })),
     helperText: "(For the purposes of this form, SFO is in San Francisco)",
     isRequired: true,
+    isSearchable: true,
+    autoComplete: true,
+    autoSelect: true,
+    isClearable: true,
+    autoHighlight: true,
+    isOptionEqualToValue: (option, value) => option.value === (value?.value || value),
   },
   { name: "arrest_location" },
   {
@@ -257,6 +325,9 @@ const court_fields = [
       animateYearScrolling: false,
     },
     isRequired: true,
+    date_options: {
+      minDate: "01/01/2020",
+    },
   },
   {
     name: "court_time",
@@ -297,9 +368,9 @@ const schema = {
       component: componentTypes.WIZARD,
       name: "wizard",
       stepsInfo: [
-        { title: "Personal Information" },
-        { title: "Arrest Information" },
-        { title: "Court Information" },
+        { title: "Personal Information", name: "personal_info" },
+        { title: "Arrest Information", name: "arrest_info" },
+        { title: "Court Information", name: "court_info" },
         // { title: 'Submit' }
       ],
       fields: [
@@ -352,8 +423,10 @@ const Form = () => {
     const getToken = async () => {
       try {
         setLoading(true);
-        const token = await executeRecaptcha("submit");
-        await axios.post("/submit", { data: values, token });
+        if (!urlParams.get("nosubmit")) {
+          const token = await executeRecaptcha("submit");
+          await axios.post("/submit", { data: values, token });
+        }
         setSuccess(true);
       } catch (e) {
         console.error(e);
@@ -430,6 +503,7 @@ const Form = () => {
         </Typography>
       </Alert>
       <FormRenderer
+        // debug={(state) => console.log(state)}
         schema={schema}
         componentMapper={{ ...componentMapper, wizard: WrappedWizard }}
         // componentMapper={componentMapper}
@@ -439,6 +513,7 @@ const Form = () => {
         validate={validate}
         showFormControls={false}
         onCancel={() => {}}
+        validatorMapper={validatorMapper}
       />
     </>
   );
