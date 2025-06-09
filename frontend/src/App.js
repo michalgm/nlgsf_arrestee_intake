@@ -332,6 +332,7 @@ const court_fields = [
   {
     name: "court_time",
     label: "Next Court Time",
+    // isRequired: true,
     component: componentTypes.TIME_PICKER,
     MuiPickersUtilsProviderProps: {
       format: "hh:mm A",
@@ -500,6 +501,10 @@ const Form = () => {
         <Typography variant="subtitle1">
           We will only use this information to keep track of people's cases, give you information, and coordinate legal
           defense. This information will not be shared or released.
+        </Typography>
+        <Typography variant="subtitle1">
+          (If you have any issues with the captcha and are on a VPN, please try connecting to a different VPN server or
+          temporarily disabling your VPN.)
         </Typography>
       </Alert>
       <FormRenderer
