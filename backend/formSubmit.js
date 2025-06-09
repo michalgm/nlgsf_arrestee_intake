@@ -36,8 +36,8 @@ async function send_email(data) {
   const info = await transporter.sendMail({
     from: `MemoryHole Legal DB" <${FROM_EMAIL}>`, // Sender address
     to: EMAILS, // List of receivers
-    subject: 'New Arrestee Intake', // Subject line
-    html: formatEmail(data), // Html body
+    subject: 'New Arrestee Outtake', // Subject line
+    html: "A new outtake form was completed. Log in to the memoryhole database to view the info.", // Html body
   });
 
   console.log('Message sent: %s', info.messageId);
