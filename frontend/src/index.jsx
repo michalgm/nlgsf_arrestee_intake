@@ -2,11 +2,11 @@
 
 import { CssBaseline } from "@mui/material";
 import { createTheme, StyledEngineProvider, ThemeProvider } from "@mui/material/styles";
-import { LocalizationProvider } from '@mui/x-date-pickers';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { LocalizationProvider } from "@mui/x-date-pickers";
+import { AdapterMoment } from "@mui/x-date-pickers/AdapterMoment";
 import React from "react";
 import ReactDOM from "react-dom";
-import { ErrorBoundary } from 'react-error-boundary';
+import { ErrorBoundary } from "react-error-boundary";
 import { GoogleReCaptchaProvider } from "react-google-recaptcha-v3";
 import App from "./App";
 
@@ -28,7 +28,7 @@ ReactDOM.render(
       <StyledEngineProvider injectFirst>
         <CssBaseline />
         <ThemeProvider theme={theme}>
-          <LocalizationProvider dateAdapter={AdapterDayjs}>
+          <LocalizationProvider dateAdapter={AdapterMoment}>
             <ErrorBoundary>
               <App />
             </ErrorBoundary>
