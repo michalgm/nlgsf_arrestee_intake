@@ -1,16 +1,16 @@
 require('dotenv').config();
 const express = require('express');
 const bodyParser = require('body-parser');
-const router = require('express-promise-router')();
 const formSubmit = require('./formSubmit');
+const helmet = require('helmet');
 
 const app = express();
 const port = process.env.PORT || 3000;
 
 app.use(express.static('public'));
+app.use(helmet());
 app.use(bodyParser.json());
-router.post('/submit', formSubmit);
-app.use(router);
+app.post('/submit', formSubmit);
 app.use((err, req, res, _next) => {
   console.error(err);
   console.error(err.stack);

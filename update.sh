@@ -5,5 +5,6 @@ npm install
 npm run build
 
 cd ../backend
+npm install
 ./node_modules/.bin/pm2 restart ecosystem.config.js
 ./node_modules/.bin/pm2 status

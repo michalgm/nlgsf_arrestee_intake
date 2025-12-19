@@ -1,6 +1,6 @@
 const axios = require('axios');
 const nodemailer = require('nodemailer');
-const startCase = require('lodash.startcase');
+// const startCase = require('lodash.startcase');
 const fs = require('fs/promises');
 const lockfile = require('proper-lockfile');
 
@@ -22,22 +22,20 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-const formatEmail = (data) => {
-  // let htmlTable = '<table style="width:100%;border-collapse:collapse;border: 1px solid #ccc;">';
+// const formatEmail = (data) => {
+//   // let htmlTable = '<table style="width:100%;border-collapse:collapse;border: 1px solid #ccc;">';
 
-  const rows = Object.entries(data).map(([key, value]) => `\n<tr><td style="padding: 8px; border-bottom: 1px solid #ddd;"><b>${startCase(key)}</b></td><td style="padding: 8px; border-bottom: 1px solid #ddd; width:100%;">${value}</td></tr>`).join('');
+//   const rows = Object.entries(data).map(([key, value]) => `\n<tr><td style="padding: 8px; border-bottom: 1px solid #ddd;"><b>${startCase(key)}</b></td><td style="padding: 8px; border-bottom: 1px solid #ddd; width:100%;">${value}</td></tr>`).join('');
 
-  return `<table style="width:100%;border-collapse:collapse;border: 1px solid #ccc;">${rows}</table>`;
-};
+//   return `<table style="width:100%;border-collapse:collapse;border: 1px solid #ccc;">${rows}</table>`;
+// };
 
-// Async..await is not allowed in global scope, must use a wrapper
-async function send_email(data) {
-  // Send mail with defined transport object
+async function send_email() {
   const info = await transporter.sendMail({
     from: `MemoryHole Legal DB" <${FROM_EMAIL}>`, // Sender address
     to: EMAILS, // List of receivers
     subject: 'New Arrestee Outtake', // Subject line
-    html: "A new outtake form was completed. Log in to the memoryhole database to view the info.", // Html body
+    html: 'A new outtake form was completed. Log in to the memoryhole database to view the info.', // Html body
   });
 
   console.log('Message sent: %s', info.messageId);
@@ -68,14 +66,18 @@ const write_file = async (data) => {
   await lockfile.unlock(filename);
 };
 
-const formSubmit = async (req, res) => {
+const formSubmit = async (req, res, next) => {
   const { data, token } = req.body;
-  console.log('processing');
-  await captcha(token);
-  await Promise.all([
-    ENABLE_EMAIL && send_email(data),
-    ENABLE_FILE && write_file(data),
-  ]);
+  try {
+    await captcha(token);
+    console.log(data)
+    await Promise.all([
+      ENABLE_EMAIL && send_email(data),
+      ENABLE_FILE && write_file(data),
+    ]);
+  } catch (error) {
+    next(error);
+  }
   return res.send('ok');
 };
 

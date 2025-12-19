@@ -1,13 +1,19 @@
 import "./App.css";
 
-import { LocalizationProvider } from "@mui/x-date-pickers";
-import { AdapterMoment } from "@mui/x-date-pickers/AdapterMoment";
 import * as React from "react";
 
 import Wizard from "@data-driven-forms/common/wizard";
+import selectNext from "@data-driven-forms/common/wizard/select-next";
 import { FormTemplate, componentMapper } from "@data-driven-forms/mui-component-mapper";
 import WizardNav from "@data-driven-forms/mui-component-mapper/wizard/wizard-nav";
-import { FormRenderer, componentTypes, validatorTypes } from "@data-driven-forms/react-form-renderer";
+import {
+  FormRenderer,
+  componentTypes,
+  validatorMapper as validatorMapperDefaults,
+  validatorTypes,
+} from "@data-driven-forms/react-form-renderer";
+import WizardContext from "@data-driven-forms/react-form-renderer/wizard-context";
+import InfoIcon from "@mui/icons-material/Info";
 import {
   Alert,
   AlertTitle,
@@ -15,17 +21,13 @@ import {
   Button,
   CircularProgress,
   Container,
-  CssBaseline,
   Paper,
   Snackbar,
+  Tooltip,
   Typography,
 } from "@mui/material";
-import { breakpoints, compose, palette, position, sizing, spacing } from "@mui/system";
-
-import selectNext from "@data-driven-forms/common/wizard/select-next";
-import WizardContext from "@data-driven-forms/react-form-renderer/wizard-context";
 import { styled } from "@mui/material/styles";
-import { Stack } from "@mui/system";
+import { Stack, breakpoints, compose, palette, position, sizing, spacing } from "@mui/system";
 import axios from "axios";
 import moment from "moment";
 import { useContext } from "react";
@@ -126,6 +128,7 @@ const fieldDefaults = (f) => ({
 const urlParams = new URLSearchParams(window.location.search);
 
 const validatorMapper = {
+  ...validatorMapperDefaults,
   // Custom validator for birth_date field
   dateValidator:
     ({ date_options: { minDate = "01/01/1920", maxDate = "12/31/2050" } = {} }) =>
@@ -158,6 +161,14 @@ const validatorMapper = {
     }
     return undefined;
   },
+  courtDateConditional: () => (value, allValues) => {
+    if (!allValues?.court_date_tbd && !value) {
+      return "This field is required unless 'Court date to be determined' is checked.";
+    } else if (value && allValues?.court_date_tbd) {
+      return "This field must be empty if 'Court date to be determined' is checked.";
+    }
+    return undefined;
+  },
 };
 
 const defaultValues = urlParams.get("debug")
@@ -181,11 +192,13 @@ const defaultValues = urlParams.get("debug")
       prn: "12345678",
       docket: "AB-123456",
       court_date: "07/20/2024",
+      court_date_tbd: false,
       court_time: 1590976642,
       abuse: "Ouch",
       notes: "Thank you",
     }
   : {
+      court_date_tbd: false,
       // arrest_date: "3/13/2024",
       // arrest_city: "San Francisco",
     };
@@ -196,7 +209,17 @@ const personal_fields = [
   { name: "preferred_name" },
   {
     name: "legal_name_confidential",
-    label: "Should we keep your legal name confidential?",
+    label: (
+      <span>
+        Should we conceal your legal name in internal communications?{" "}
+        <Tooltip
+          title="If you check this box, we will exclusively use your preferred name in internal communications within legal support, except when it is materially necessary to use your legal name in order to organize legal support"
+          arrow
+        >
+          <InfoIcon fontSize="small" />
+        </Tooltip>
+      </span>
+    ),
     component: componentTypes.CHECKBOX,
   },
   { name: "preferred_pronouns" },
@@ -273,6 +296,7 @@ const arrest_fields = [
       "Emeryville",
       "Dublin",
       "Hayward",
+      "Palo Alto",
       "Richmond",
       "San Jose",
       "San Leandro",
@@ -299,7 +323,7 @@ const arrest_fields = [
   },
   {
     name: "felonies",
-    label: "Felony Charges?",
+    label: "Do you have felony charges?",
     component: componentTypes.CHECKBOX,
   },
   {
@@ -308,11 +332,21 @@ const arrest_fields = [
     component: componentTypes.TEXTAREA,
     minRows: 4,
   },
+  {
+    name: "injured_during_arrest",
+    label: "Were you injured during your arrest?",
+    component: componentTypes.CHECKBOX,
+  },
 ];
 
 const court_fields = [
   { name: "prn", label: "Incident ID/Police Report Number" },
   { name: "docket", label: "Docket/Citation/CEN Number" },
+  {
+    name: "court_date_tbd",
+    label: "Court date to be determined / Citation has no court date",
+    component: componentTypes.CHECKBOX,
+  },
   {
     name: "court_date",
     label: "Next Court Date",
@@ -324,7 +358,10 @@ const court_fields = [
       //   value ? [/\d/, /\d/, "/", /\d/, /\d/, "/", /\d/, /\d/, /\d/, /\d/] : [],
       animateYearScrolling: false,
     },
-    isRequired: true,
+    validate: [{ type: "courtDateConditional" }, { type: "dateValidator", date_options: { minDate: "01/01/2020" } }],
+    resolveProps: (props, { meta, input }, formOptions) => ({
+      isRequired: !formOptions.getFieldState("court_date_tbd")?.value,
+    }),
     date_options: {
       minDate: "01/01/2020",
     },
@@ -337,6 +374,10 @@ const court_fields = [
     MuiPickersUtilsProviderProps: {
       format: "hh:mm A",
     },
+    validate: [{ type: "courtDateConditional" }, { type: "timeValidator" }],
+    resolveProps: (props, { meta, input }, formOptions) => ({
+      isRequired: !formOptions.getFieldState("court_date_tbd")?.value,
+    }),
   },
   {
     name: "court_location",
@@ -447,16 +488,15 @@ const Form = () => {
   const submit = async (values, api) => {
     setError(null);
     setSuccess(false);
-
     api.getRegisteredFields().forEach((f) => {
       if (values[f] === undefined) {
         values[f] = "";
       }
     });
     Object.keys(values).forEach((k) => {
-      if (k.match("_date") && values[k]) {
+      if (k.match("_date$") && values[k]) {
         values[k] = moment(values[k], "MM/DD/YYYY").format("YYYY-MM-DD");
-      } else if (k.match("_time") && values[k]) {
+      } else if (k.match("_time$") && values[k]) {
         values[k] = moment(values[k]).format("hh:mm A");
       }
     });
@@ -526,7 +566,7 @@ const Form = () => {
 
 function App() {
   return (
-    <CssBaseline>
+    <>
       {/* <Box
         id="nlg-logo"
         xs={{ width: 70, position: "absolute" }}
@@ -540,19 +580,17 @@ function App() {
           />
         </a>
       </Box> */}
-      <LocalizationProvider dateAdapter={AdapterMoment}>
-        <Container maxWidth="md">
-          <Paper style={{ padding: 20 }}>
-            <Box bgcolor="primary.main" color="white" padding={2} mb={4}>
-              <Typography variant="h4" align="center">
-                Legal Solidarity Bay Area Arrestee Form
-              </Typography>
-            </Box>
-            {Form()}
-          </Paper>
-        </Container>
-      </LocalizationProvider>
-    </CssBaseline>
+      <Container maxWidth="md">
+        <Paper style={{ padding: 20 }}>
+          <Box bgcolor="primary.main" color="white" padding={2} mb={4}>
+            <Typography variant="h4" align="center">
+              Legal Solidarity Bay Area Arrestee Form
+            </Typography>
+          </Box>
+          {Form()}
+        </Paper>
+      </Container>
+    </>
   );
 }
 
