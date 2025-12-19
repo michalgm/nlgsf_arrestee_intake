@@ -32,8 +32,7 @@ const transporter = nodemailer.createTransport({
 
 async function send_email() {
   const info = await transporter.sendMail({
-    from: `MemoryHole Legal DB" <${FROM_EMAIL}>`, // Sender address
-    to: EMAILS, // List of receivers
+    from: { name: 'MemoryHole Legal DB', address: FROM_EMAIL },
     subject: 'New Arrestee Outtake', // Subject line
     html: 'A new outtake form was completed. Log in to the memoryhole database to view the info.', // Html body
   });
